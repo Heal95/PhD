@@ -1,5 +1,5 @@
 Dubrovnik shaking scenarios website - https://dubrovnikshakingscenarios.gfz.hr
---------------------------------------------------------------------------
+------------------------------------------------------------------------------
 The website consists of several static files that need to be served through a server program (e.g., NGINX) to function correctly:
 
 ● index.html: Defines the components on the page.
