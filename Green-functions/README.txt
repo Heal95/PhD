@@ -1,5 +1,5 @@
-DF_1D model Green functions - https://urn.nsk.hr/urn:nbn:hr:217:065258
-----------------------------------------------------------------------
+Scripts for DF_1D model Green functions - https://urn.nsk.hr/urn:nbn:hr:217:065258
+----------------------------------------------------------------------------------
 To calculate Green's functions, the Fk3.2 code was used (https://www.eas.slu.edu/People/LZhu/home.html; accessed in June 2021). Running the code requires three input files:
 ● DF_1D.fk1d: 1D seismic model.
 ● locations.dat: Distance matrix.
