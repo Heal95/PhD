@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from obspy import read
 from scipy import signal
-import os
+import os, sys
 
 def ormsby(duration, dt, f, return_t=False):
     """
@@ -228,7 +228,7 @@ def scaling_laws(Mw, scaling_law, fault, mu=30*pow(10,9), dyne=False):
 
     return(L, W, A, M0, S)
 
-def dist2coord_deg(lon_P0,lat_P0,Lx,Ly):
+def dist2coord_deg(lon_P0, lat_P0, Lx, Ly):
     """
     Coordinate of the unknown point P from distance between
     P and known point P0 on Earth.
@@ -282,7 +282,7 @@ def LatLonR2xyz(file_in):
 
     return(file_out);
 
-def patchfault(m,i,j):
+def patchfault(m, i, j):
     """
     Creates patch model for a given finite-fault parameters.
     Args:
@@ -342,7 +342,7 @@ def patchfault(m,i,j):
 
     return pm;
 
-def cmt2finite_faults(lonc,latc,depthc,strike,dip,Mw,ii,jj,H):
+def cmt2finite_faults(lonc, latc, depthc, strike, dip, Mw, ii, jj, H):
     """
     Creates finite-fault model for a source.
     Args:
@@ -400,3 +400,213 @@ def cmt2finite_faults(lonc,latc,depthc,strike,dip,Mw,ii,jj,H):
         coords_time[3][j] = dist[j]/velocity_rupture
     
     return coords_time;
+
+def sdr2Hcmt(Mw, S, D, R):
+    """
+    Converts moment tensor components from XYZ to TPR coordinates
+    (Harvard CMTSOLUTION format)
+    Args:
+        Mw (float): Moment magnitude of the event.
+        S (float): Strike of the fault.
+        D (float): Dip of the fault.
+        R (float): Rake of the fault.
+    Returns:
+        float: Moment tensor components in TPR coordinates.
+    """
+
+    # PI / 180 to convert degrees to radians
+    d2r =  np.pi/180
+
+    # convert to radians
+    S *= d2r
+    D *= d2r
+    R *= d2r
+
+    # Earthquake magnitude
+    M0 = pow(10,1.5*(Mw+10.7)); # seismic moment in dyne cm
+
+    Mxx = -M0 * (np.sin(D) * np.cos(R) * np.sin(2*S) + np.sin(2*D) * np.sin(R) * np.sin(S)*np.sin(S))
+    Myy =  M0 * (np.sin(D) * np.cos(R) * np.sin(2*S) - np.sin(2*D) * np.sin(R) * np.cos(S)*np.cos(S))
+    Mzz = -1.0 * (Mxx + Myy)
+    Mxy =  M0 * (np.sin(D) * np.cos(R) * np.cos(2*S) + 0.5 * np.sin(2*D) * np.sin(R) * np.sin(2*S))
+    Mxz = -M0 * (np.cos(D) * np.cos(R) * np.cos(S) + np.cos(2*D) * np.sin(R) * np.sin(S))
+    Myz = -M0 * (np.cos(D) * np.cos(R) * np.sin(S) - np.cos(2*D) * np.sin(R) * np.cos(S))
+
+    # also convert to Harvard CMTSOLUTION format
+    Mtt = Mxx
+    Mpp = Myy
+    Mrr = Mzz
+    Mtp = Mxy * (-1)
+    Mrt = Mxz
+    Mrp = Myz * (-1)
+    
+    return(Mtt, Mpp, Mrr, Mtp, Mrt, Mrp);
+
+def convolve(timeval, sem, hd_triangle, sdm_triangle, triangle=False):
+    """
+    Translated Specfem3D code from FORTRAN90 to Python by H. Latečki, 
+    for Gaussian or triangle convolution
+    Args:
+        timeval (ndarray): Time values of the signal.
+        sem (ndarray): Values of the signal.
+        hd_triangle (float): Half duration of the triangle.
+        sdm_triangle (float): Used to define a Gaussian with the 
+        right exponent to mimic a triangle of equivalent half huration.
+        triangle (boolean): Set True for triangle convolution;
+        False for Gaussian convolution.
+        datasave (boolean): Set True to save convolved signal.
+    Returns:
+        ndarray: Values of the convolved signal.
+    """
+
+    alpha = sdm_triangle/hd_triangle
+    timeval = np.asarray(timeval)
+    sem = np.asarray(sem)
+    sem_fil = np.zeros(len(sem))
+    nlines = len(sem)
+    
+    # compute the time step
+    dt = timeval[1] - timeval[0]
+    
+    if triangle == True:
+        N_j = np.ceil(hd_triangle/dt)
+    else:
+        N_j = np.ceil(1.5*hd_triangle/dt)
+    sem_fil = []
+
+    for i in range(0,nlines-1):
+        a = 0
+        for j in range(-int(N_j),int(N_j)):
+            if i>j and (i-j)<=(nlines-1):
+                tau_j = j*dt 
+                # convolve with triangle
+                if triangle==True: 
+                    height = 1/ hd_triangle
+                    if abs(tau_j)>hd_triangle:
+                        source = 0
+                    elif tau_j<0:
+                        t1 = -N_j*dt
+                        displ1 = 0
+                        t2 = 0
+                        displ2 = height
+                        gamma = (tau_j - t1)/(t2 - t1)
+                        source= (1 - gamma)*displ1 + gamma*displ2
+                    elif tau_j>=0:
+                        t1 = 0
+                        displ1 = height
+                        t2 = +N_j*dt
+                        displ2 = 0
+                        gamma = (tau_j - t1)/(t2 - t1)
+                        source= (1 - gamma)*displ1 + gamma*displ2
+                # convolve with Gaussian
+                else:
+                    exponentval = (alpha*alpha)*(tau_j*tau_j)
+                    if exponentval<50:
+                        source = alpha*np.exp(-exponentval)/np.sqrt(np.pi)
+                    else:
+                        source = 0
+        
+                a += sem[i-j]*source*dt
+        sem_fil.append(a)
+    sem_fil.append(a)
+    
+    # plot convolved and unconvolved signal
+    fig = plt.figure(figsize=(18, 18))
+    plt.rcParams.update({'font.size': 20})
+    plt.grid(True)
+    plt.title(file)
+    plt.plot(timeval, sem,'cornflowerblue',label='before convolution')
+    plt.plot(timeval, sem_fil,'tab:red',label='after convolution')
+    plt.legend(loc='upper right')
+    
+    return sem_fil
+
+def gaussian_taper(x, sigma=2.0):
+    """
+    Gaussian tapering function.
+    Args:
+        x (ndarray): Values to taper.
+        sigma (float): Standard deviation.
+    Returns:
+        ndarray: Gaussian tapered values.
+    """
+    return np.exp(-(x**2)/(2 * sigma**2))
+
+def calculate_energy_contributions(center_point, all_points, radius, in_percent, total_energy):
+    """
+    Calculates energy contributions based on a distance from the center 
+    point. Within the radius, values follow Gaussian distrubution of distances. 
+    Outside the radius, values exponentially decrease by the square of the distance.
+    Args:
+        center_point (ndarray): Coordinates of the center point
+        (latitude, longitude, altitude in meters).
+        all_points (ndarray): Coordinates of all data points
+        (latitude, longitude, altitude in meters).
+        radius (float): Radius in km from center point. 
+        in_percent (float): Value between 0 and 1 determening how
+        much energy is contained within radius from center point.
+        total_energy (float): Total energy.
+    Returns:
+        contributions (ndarray): List of energy contributions and
+        coordinates of the data points.
+    """
+    contributions = [];
+    total_energy_within = total_energy * in_percent
+    total_energy_outside = total_energy * (1-in_percent)
+    
+    for point in all_points:
+        distance = np.linalg.norm(point - center_point)
+        if distance<=radius:
+            energy_contribution = total_energy_within * gaussian_taper(distance)
+        else:
+            energy_contribution = total_energy_outside * pow(distance,-2)
+        
+        contributions.append((energy_contribution, point))
+
+    total_contributions = sum(contribution[0] for contribution in contributions)
+    normalization_factor = total_energy / total_contributions if total_contributions != 0 else 1
+    # percent output
+    contributions = [((energy*normalization_factor), point) for energy, point in contributions]
+    
+    return contributions
+
+def poly_taper(timeval, sem, taper_start, taper_end, order=4)
+    """
+    Calculates energy contributions based on a distance from the center 
+    point. Within the radius, values follow Gaussian distrubution of distances. 
+    Outside the radius, values exponentially decrease by the square of the distance.
+    Args:
+        timeval (ndarray): Time values of the signal.
+        sem (ndarray): Values of the signal.
+        taper_start (float): Start of the tapering interval (in seconds) 
+        taper_end (float): End of the tapering interval (in seconds).
+        order (int): Order of the polynominal function.
+    Returns:
+        tapered (ndarray): Tapered values of the signal.
+    """
+    delta = timeval[1] - timeval[0]
+    orig = np.asarray(sem)
+    time = np.asarray(timeval)
+    fs = 1/delta  # Sampling frequency in Hz
+
+    # Calculate corresponding sample indices
+    start_index = int(taper_start * fs)
+    end_index = int(taper_end * fs)
+
+    # Define the length of the taper in seconds
+    taper_length = taper_end - taper_start
+
+    # Calculate the number of samples corresponding to taper length
+    taper_samples = taper_length * fs
+
+    # Create a tapering window using a polynomial function
+    taper_window = np.zeros_like(time)
+    taper_window[start_index:end_index] = np.power((np.arange(taper_samples-1)/float(taper_samples-1)),order)
+
+    # Apply the tapering window to the data
+    tapered = orig * taper_window
+
+    # Set the values of the tapered data after the tapering interval to be the same as the original data
+    tapered[end_index:] = orig[end_index:]
+
+    return tapered
