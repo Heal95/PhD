@@ -23,4 +23,4 @@ The data must consist of the following files and subdirectories:
 ● podaci/figs/E/: A directory with images of the 'E' component for each data point.
 ● podaci/figs/N/: A directory with images of the 'N' component for each data point.
 ● podaci/figs/Z/: A directory with images of the 'Z' component for each data point.
-The data must be prepared for use by running the script ‘prepare.sh’. This bash script must be placed in the ‘podaci’ directory before running. The script will generate the files necessary for loading the data on the page.
+The data must be prepared for use by running the script ‘prepare.sh’. This bash script must be placed in the ‘podaci’ directory before running. The script will generate the files necessary for loading the data on the page. Figures were plotted using plot_data.py.
