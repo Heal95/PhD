@@ -6,6 +6,10 @@ import numpy as np
 from obspy import read
 from scipy import signal
 import os, sys
+import pandas as pd
+import geopandas as gpd
+from shapely.geometry import Point, Polygon
+import contextily as ctx
 
 def ormsby(duration, dt, f, return_t=False):
     """
@@ -55,9 +59,9 @@ def strong_motion_duration(trace, filters, s_filters, save_fig=False, fig_folder
         trace (obspy Trace object): The input record.
         filters (ndarray): Sequence of form (f1, f2, f3, f4), or list of lists of
             frequencies, used for Ormsby filtering.
-        s_filters (ndarray): List of smoothing filters
-        save_fig (boolean): True/False to save figure
-        fig_folder (string): Path to where the figures are saved 
+        s_filters (ndarray): List of smoothing filters.
+        save_fig (boolean): True/False to save figure.
+        fig_folder (string): Path to where the figures are saved.
     Returns:
         list: A vector containing strong motion duration in seconds for each filter/channel.
     """
@@ -287,7 +291,7 @@ def patchfault(m, i, j):
     Creates patch model for a given finite-fault parameters.
     Args:
         m (ndarray): List containing fault parameters: L, W, depth_le, 
-        dip, strike, W/2*np.cos(strike*np.pi/180), 0
+        dip, strike, W/2*np.cos(strike*np.pi/180), 0.
         i (int): Number of patches along fault length.
         j (int): Number of patches along fault width.
     Returns:
@@ -404,7 +408,7 @@ def cmt2finite_faults(lonc, latc, depthc, strike, dip, Mw, ii, jj, H):
 def sdr2Hcmt(Mw, S, D, R):
     """
     Converts moment tensor components from XYZ to TPR coordinates
-    (Harvard CMTSOLUTION format)
+    (Harvard CMTSOLUTION format).
     Args:
         Mw (float): Moment magnitude of the event.
         S (float): Strike of the fault.
@@ -572,13 +576,11 @@ def calculate_energy_contributions(center_point, all_points, radius, in_percent,
 
 def poly_taper(timeval, sem, taper_start, taper_end, order=4)
     """
-    Calculates energy contributions based on a distance from the center 
-    point. Within the radius, values follow Gaussian distrubution of distances. 
-    Outside the radius, values exponentially decrease by the square of the distance.
+    Tapers timeseries with polynomial function for a given time window.
     Args:
         timeval (ndarray): Time values of the signal.
         sem (ndarray): Values of the signal.
-        taper_start (float): Start of the tapering interval (in seconds) 
+        taper_start (float): Start of the tapering interval (in seconds).
         taper_end (float): End of the tapering interval (in seconds).
         order (int): Order of the polynominal function.
     Returns:
@@ -610,3 +612,24 @@ def poly_taper(timeval, sem, taper_start, taper_end, order=4)
     tapered[end_index:] = orig[end_index:]
 
     return tapered
+
+def simple_geodata_plot(lat, lon, msize):
+    """
+    Plots geodata for fast visualization.
+    Args:
+        lat (ndarray): Latitudes of the points.
+        lon (ndarray): Longitudes of the points.
+        msize (ndarray/float): Either float or list of values 
+        (if points need to be scaled).
+    """
+    crs={'init':'epsg:4326'}
+    geometry = [Point(xy) for xy in zip(lat,lon)]
+    geodata = gpd.GeoDataFrame(crs=crs, geometry=geometry)
+    ax = geodata.plot(figsize=(15,10), markersize=msize,color='red',alpha=0.5)
+    ax.set_xlim(min(lon)*0.9, max(lon)*1.1)
+    ax.set_ylim(min(lat)*0.9, max(lat)*1.1)
+    ctx.add_basemap(ax, crs=crs, source=ctx.providers.Stamen.TonerLite)#ctx.providers.OpenStreetMap.Mapnik)
+    plt.tight_layout()
+    plt.show()
+
+    return
