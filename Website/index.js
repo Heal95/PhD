@@ -148,10 +148,10 @@ const languages = {
         "infoa": "General information",
         "infob": "General information",
         "infoc": "This application enables the reading of low-frequency simulated ground " +
-            "motion records for various earthquake shaking scenarios of the 1667 great Dubrovnik " +
+            "motion records for various  shaking scenarios of the 1667 great Dubrovnik " +
             "earthquake. The displayed data is also the result of a doctoral dissertation titled" +
             " \"Seismic shaking scenarios for the wider Dubrovnik area\" by Helena Latečki.",
-        "infod": "Individual records and the entire dataset by scenario are available " +
+        "infod": "Individual records and the entire dataset for each scenario are available " +
             "for download in text (txt) format.",
         "infoe": "For any questions and additional information, please send an email to: " +
             "helena.latecki[at]gmail.com",
@@ -203,6 +203,11 @@ let lang = "hr";
 const langHrButton = document.getElementById("lang-hr-button");
 const langEnButton = document.getElementById("lang-en-button");
 
+const bigDownloadMessageHr = "Datoteka je vrlo velika. Jeste li sigurni da želite nastaviti s preuzimanjem?";
+const bigDownloadMessageEn = "The file is very large. Are you sure you want to proceed with the download?";
+
+let bigDownloadMessage = bigDownloadMessageHr;
+
 function translateLang(language) {
     lang = language;
 
@@ -211,8 +216,10 @@ function translateLang(language) {
 
     if (language === "hr") {
         langHrButton.classList.add("selected");
+	bigDownloadMessage = bigDownloadMessageHr;
     } else if (language === "en") {
         langEnButton.classList.add("selected");
+	bigDownloadMessage = bigDownloadMessageEn;
     }
 
     let updateHr = false;

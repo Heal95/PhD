@@ -40,7 +40,7 @@
 
             <h4>
                 <label class="i18n" data-i18n-key="subtitleb" for="scenario-select">
-                    Parametrizacija modela ograničenih izvora Velikog dubrovačkog potresa
+                    Parametrizacija modela konačnih izvora Velikog dubrovačkog potresa
                 </label>
             </h4>
 
@@ -79,7 +79,7 @@
                         <span class="i18n" data-i18n-key="moments">Magnituda i seizmički moment:</span>
                         <span class="pad-left">M<sub>w</sub> = <span id="scenario-magnitude">?</span></span>
                         <span class="pad-left">M<sub>0</sub> = <span
-                                id="scenario-seismic-moment">?</span> dyne⋅cm</span>
+                                id="scenario-seismic-moment">?</span> dyn⋅cm</span>
                     </div>
 
                     <div class="col">
@@ -100,7 +100,7 @@
             </div>
 
             <div>
-                <form class="row" style="justify-content: space-between" id="scenario-data" method="GET" hidden>
+                <form class="row" style="justify-content: space-between" id="scenario-data" method="GET" onsubmit="return confirm(bigDownloadMessage);" hidden>
                     <button class="i18n" data-i18n-key="downloada" type="submit">Preuzmi sve podatke</button>
 
                     <a id="scenario-video-url" href="" target="_blank" rel="noopener noreferrer">
@@ -123,14 +123,14 @@
             <h3 class="i18n" data-i18n-key="infob">Opće informacije</h3>
 
             <p class="i18n" data-i18n-key="infoc">
-                Ova aplikacija omogućuje očitavanje niskofrekventnih simuliranih zapisa brzina gibanja tla za<!--
-		-->različite scenarije potresne trešnje Velikog dubrovačkog potresa iz 1667. godine. Prikazani podatci<!--
-		-->ujedno su i rezultat doktorske disertacije naslova „Simulacija potresne trešnje za šire dubrovačko<!--
+                Ova aplikacija omogućuje očitavanje niskofrekventnih simuliranih zapisa brzina gibanja tla za <!--
+		-->različite scenarije potresne trešnje Velikog dubrovačkog potresa iz 1667. godine. Prikazani podatci <!--
+		-->ujedno su i rezultat doktorske disertacije naslova „Simulacija potresne trešnje za šire dubrovačko <!--
 		-->područje“ autorice Helene Latečki.
             </p>
 
             <p class="i18n" data-i18n-key="infod">
-                Pojedinačni zapisi i cjelokupni skup podataka po scenariju dostupni su za preuzimanje u<!--
+                Pojedinačni zapisi i cjelokupni skup podataka po scenariju dostupni su za preuzimanje u <!--
 		-->tekstualnom (txt) formatu.
             </p>
 
